@@ -7,69 +7,126 @@
     body {
       background: #121212;
       font-family: 'Segoe UI', sans-serif;
-      color: #fff;
+      color: #e0e0e0;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+    }
+
+    header {
+      background-color: #1e1e1e;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: #90caf9;
     }
 
     .menu {
       position: relative;
-      display: inline-block;
     }
 
     .menu-button {
-      background-color: #1e88e5;
+      background-color: #2196f3;
       color: white;
-      padding: 12px 20px;
+      padding: 10px 18px;
       font-size: 16px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .menu-button:hover {
+      background-color: #1976d2;
     }
 
     .menu-content {
       display: none;
       position: absolute;
-      background-color: #1e1e1e;
-      min-width: 180px;
-      box-shadow: 0px 8px 16px rgba(0,0,0,0.3);
-      border-radius: 6px;
-      z-index: 1;
+      right: 0;
+      top: 50px;
+      background-color: #2a2a2a;
+      min-width: 200px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      z-index: 10;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
     }
 
     .menu-content a {
       color: #bbdefb;
-      padding: 12px 16px;
+      padding: 14px 20px;
       text-decoration: none;
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .menu-content a:hover {
-      background-color: #2c2c2c;
+      background-color: #37474f;
     }
 
     .menu:hover .menu-content {
       display: block;
     }
 
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(-10px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    main {
+      padding: 40px 20px;
+      max-width: 800px;
+      margin: auto;
+      text-align: center;
+    }
+
     h1 {
-      margin-top: 40px;
+      color: #90caf9;
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #b0bec5;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .menu-content a {
+        font-size: 16px;
+        padding: 12px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="menu">
-    <button class="menu-button">Menú</button>
-    <div class="menu-content">
-      <a href="calculadora.html">Calculadora de Piezas</a>
-      <a href="finanzas.html">Finanzas</a>
-      <a href="contacto.html">Contacto</a>
+  <header>
+    <div class="logo">📂 Mi Proyecto</div>
+    <div class="menu">
+      <button class="menu-button">Menú ▾</button>
+      <div class="menu-content">
+        <a href="calculadora.html">🧮 Calculadora</a>
+        <a href="finanzas.html">💰 Finanzas</a>
+        <a href="contacto.html">📬 Contacto</a>
+        <a href="galeria.html">🖼️ Galería</a>
+        <a href="t90-piezas-por-hora.html">🔧 T90 - Piezas por Hora</a>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <h1>Bienvenido al índice</h1>
-  <p>Selecciona una opción del menú para ir a otra página.</p>
+  <main>
+    <h1>Bienvenido</h1>
+    <p>Selecciona una opción del menú para explorar otras herramientas de este repositorio.</p>
+  </main>
 
 </body>
 </html>
