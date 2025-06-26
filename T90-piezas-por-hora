@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calculadora de Piezas Proporcionales</title>
+  <style>
+    body {
+      background: #121212;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      color: #e0e0e0;
+    }
+
+    h2 {
+      color: #90caf9;
+    }
+
+    .container {
+      background: #1e1e1e;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+      max-width: 420px;
+      width: 100%;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+      color: #bbdefb;
+    }
+
+    input {
+      padding: 10px;
+      margin-top: 5px;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2c2c2c;
+      color: #e0e0e0;
+      font-size: 16px;
+    }
+
+    input:focus {
+      border-color: #64b5f6;
+      outline: none;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      background: #2196f3;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #1976d2;
+    }
+
+    #resultado {
+      margin-top: 25px;
+      font-size: 18px;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <h2>Calculadora Proporcional de Piezas</h2>
+  <div class="container">
+    <label>¿Cuántas piezas conoces?</label>
+    <input type="number" id="piezasConocidas" placeholder="Ej: 14">
+
+    <label>¿Cuánto miden esas piezas en total? (cm)</label>
+    <input type="number" id="longitudConocida" placeholder="Ej: 84">
+
+    <label>¿Cuánto mide la longitud mayor? (cm)</label>
+    <input type="number" id="longitudMayor" placeholder="Ej: 150">
+
+    <label>¿Cuántas piezas usas por hora?</label>
+    <input type="number" id="piezasPorHora" placeholder="Ej: 4">
+
+    <button onclick="calcularProporcion()">Calcular</button>
+
+    <div id="resultado"></div>
+  </div>
+
+  <script>
+    function calcularProporcion() {
+      const piezas = parseFloat(document.getElementById("piezasConocidas").value);
+      const largo = parseFloat(document.getElementById("longitudConocida").value);
+      const mayor = parseFloat(document.getElementById("longitudMayor").value);
+      const porHora = parseFloat(document.getElementById("piezasPorHora").value);
+      const resultado = document.getElementById("resultado");
+
+      if (isNaN(piezas) || isNaN(largo) || isNaN(mayor) || piezas <= 0 || largo <= 0 || mayor <= 0) {
+        resultado.innerHTML = "⚠️ Por favor ingresa valores válidos mayores a 0.";
+        return;
+      }
+
+      const piezasCalculadas = Math.floor((mayor * piezas) / largo);
+      let horas = "—";
+      if (!isNaN(porHora) && porHora > 0) {
+        horas = Math.floor(piezasCalculadas / porHora);
+      }
+
+      resultado.innerHTML =
+        `🔹 Puedes colocar <strong>${piezasCalculadas} piezas completas</strong><br><br>` +
+        `⏱️ Duración estimada: <strong>${horas}</strong> horas usando <strong>${porHora || '—'}</strong> piezas por hora.`;
+    }
+  </script>
+</body>
+</html>
