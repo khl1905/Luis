@@ -2,115 +2,74 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Calculadora de Piezas Proporcionales</title>
+  <title>Inicio</title>
   <style>
     body {
       background: #121212;
       font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px;
-      color: #e0e0e0;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
     }
 
-    h2 {
-      color: #90caf9;
+    .menu {
+      position: relative;
+      display: inline-block;
     }
 
-    .container {
-      background: #1e1e1e;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
-      max-width: 420px;
-      width: 100%;
-    }
-
-    label {
-      font-weight: bold;
-      display: block;
-      margin-top: 15px;
-      color: #bbdefb;
-    }
-
-    input {
-      padding: 10px;
-      margin-top: 5px;
-      width: 100%;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #2c2c2c;
-      color: #e0e0e0;
-      font-size: 16px;
-    }
-
-    input:focus {
-      border-color: #64b5f6;
-      outline: none;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 12px;
-      background: #2196f3;
+    .menu-button {
+      background-color: #1e88e5;
       color: white;
+      padding: 12px 20px;
       font-size: 16px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      width: 100%;
     }
 
-    button:hover {
-      background: #1976d2;
+    .menu-content {
+      display: none;
+      position: absolute;
+      background-color: #1e1e1e;
+      min-width: 180px;
+      box-shadow: 0px 8px 16px rgba(0,0,0,0.3);
+      border-radius: 6px;
+      z-index: 1;
     }
 
-    #resultado {
-      margin-top: 25px;
-      font-size: 18px;
-      color: #ffffff;
+    .menu-content a {
+      color: #bbdefb;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+    }
+
+    .menu-content a:hover {
+      background-color: #2c2c2c;
+    }
+
+    .menu:hover .menu-content {
+      display: block;
+    }
+
+    h1 {
+      margin-top: 40px;
     }
   </style>
 </head>
 <body>
-  <h2>Calculadora Proporcional de Piezas</h2>
-  <div class="container">
-    <label>¿Cuántas piezas conoces?</label>
-    <input type="number" id="piezasConocidas" placeholder="Ej: 14">
 
-    <label>¿Cuánto miden esas piezas en total? (cm)</label>
-    <input type="number" id="longitudConocida" placeholder="Ej: 84">
-
-    <label>¿Cuánto mide la longitud mayor? (cm)</label>
-    <input type="number" id="longitudMayor" placeholder="Ej: 150">
-
-    <button onclick="calcularProporcion()">Calcular</button>
-
-    <div id="resultado"></div>
+  <div class="menu">
+    <button class="menu-button">Menú</button>
+    <div class="menu-content">
+      <a href="calculadora.html">Calculadora de Piezas</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="contacto.html">Contacto</a>
+    </div>
   </div>
 
-  <script>
-    function calcularProporcion() {
-      const piezas = parseFloat(document.getElementById("piezasConocidas").value);
-      const largo = parseFloat(document.getElementById("longitudConocida").value);
-      const mayor = parseFloat(document.getElementById("longitudMayor").value);
-      const resultado = document.getElementById("resultado");
+  <h1>Bienvenido al índice</h1>
+  <p>Selecciona una opción del menú para ir a otra página.</p>
 
-      if (isNaN(piezas) || isNaN(largo) || isNaN(mayor) || piezas <= 0 || largo <= 0 || mayor <= 0) {
-        resultado.innerHTML = "⚠️ Por favor ingresa valores válidos mayores a 0.";
-        return;
-      }
-
-      const piezasCalculadas = Math.floor((mayor * piezas) / largo);
-      const totalEstimado = piezasCalculadas * (largo / piezas);
-      const restante = (mayor - totalEstimado).toFixed(2);
-
-      resultado.innerHTML =
-        `🔹 Puedes colocar <strong>${piezasCalculadas} piezas completas</strong><br>` +
-        `🔹 Usarás <strong>${totalEstimado.toFixed(2)} cm</strong> de los <strong>${mayor} cm</strong><br>` +
-        `🔹 Espacio restante: <strong>${restante} cm</strong>`;
-    }
-  </script>
 </body>
 </html>
