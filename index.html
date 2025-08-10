@@ -1,40 +1,597 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Inicio</title>
+  <meta charset="UTF-8">
+  <title>Galería Aleatoria con Caché Fragmentado</title>
   <style>
     body {
-      background: #121212;
-      font-family: 'Segoe UI', sans-serif;
-      color: #e0e0e0;
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      background: #f0f0f0;
     }
-
-    header {
-      background-color: #1e1e1e;
-      padding: 15px 30px;
+    .galeria {
+      max-height: 100vh;
+      overflow-y: auto;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      flex-direction: column;
+      gap: 10px;
+      scroll-behavior: auto;
+      padding: 10px;
+      background: white;
+      border-radius: 10px;
     }
-
-    .logo {
-      font-size: 22px;
+    .galeria img {
+      width: 100%;
+      border-radius: 8px;
+      border: 2px solid #ccc;
+    }
+    .panel {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #ffffffcc;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      z-index: 9999;
+    }
+    .contador {
       font-weight: bold;
-      color: #90caf9;
+      margin-top: 5px;
     }
-
-    .menu {
+    button {
+      margin-top: 5px;
+      margin-right: 5px;
+    }
+    .imagen-contenedor {
       position: relative;
+      width: 100%;
+    }
+    .peso-imagen {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+      max-width: 90%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="contador" id="contadorGaleria">Galería 0 de 0</div>
+    <div class="contador" id="contadorImagen">Imagen 0 de 0</div>
+    <div class="contador" id="contadorTotalImagenes">Total Imágenes: 0 (Actual: 0)</div>
+    <div class="contador" id="nombreImagen">Nombre: Desconocido</div>
+    <div class="contador" id="duracionPresentacion">Duración: 0:00:00</div>
+    <div class="contador" id="pesoCache">Caché: 0 GB</div>
+    <button onclick="borrarCache()">🗑️ Borrar Caché</button>
+    <button id="botonPausa" onclick="togglePausa()">⏸️ Pausar</button>
+  </div>  
+  <div class="galeria" id="galeria"></div>  
+  <script>
+    let listaURLs = [
+     "http://galleries.allover30.com/A/Andie/Outdoors01/01.jpg",
+"http://galleries.allover30.com/G/Gabrielah-002679/01.jpg",
+"http://galleries.allover30.com/J/Joanna-002597/01.jpg",
+"http://galleries.allover30.com/K/Katie/Lacey01/01.jpg",
+"http://galleries.allover30.com/L/Lauren/Housewives02/01.jpg",
+"http://galleries.allover30.com/M/Merilyn/Furry02/01.jpg",
+"http://galleries.allover30.com/M/Michelle-002186/01.jpg",
+"http://galleries.allover30.com/M/Michelle-002306/01.jpg",
+"http://galleries.allover30.com/mature/AddieJuniper/M0FCFw/add001002008969001.jpg",
+"http://galleries.allover30.com/mature/AddieJuniper/rvaD4W/add001002008724001.jpg",
+"http://galleries.allover30.com/mature/AlanaLuv/E40Av0/ala003002008790001.jpg",
+"http://galleries.allover30.com/mature/AlanaLuv/unVsTQ/ala003002008343001.jpg",
+"http://galleries.allover30.com/mature/AlexaThomas/coEMfD/ale012014006962001.jpg",
+"http://galleries.allover30.com/mature/AllyzaBlue/11xqMg/all001002005710001.jpg",
+"http://galleries.allover30.com/mature/Alma/NmSjMp/alm001012004182001.jpg",
+"http://galleries.allover30.com/mature/AmandaJean/VUkNUW/ama003002005716001.jpg",
+"http://galleries.allover30.com/mature/Amber/SwPtGW/amb001003003027001.jpg",
+"http://galleries.allover30.com/mature/AmberD/kh6IJ9/amb002005001647001.jpg",
+"http://galleries.allover30.com/mature/AmberJewell/jCOrLq/amb009021006979001.jpg",
+"http://galleries.allover30.com/mature/AmberL/irWn3K/amb007021006147001.jpg",
+"http://galleries.allover30.com/mature/AmberThi/blGfpZ/amb005005005005001.jpg",
+"http://galleries.allover30.com/mature/Andie/fDa0wC/and001026002112001.jpg",
+"http://galleries.allover30.com/mature/AngelicaLane/0mMtCH/ang005002004683001.jpg",
+"http://galleries.allover30.com/mature/AngelicaLane/99JTby/ang005002004763001.jpg",
+"http://galleries.allover30.com/mature/AngelicaLane/ayHScH/ang005002004654001.jpg",
+"http://galleries.allover30.com/mature/Annabelle/F98qSG/ann006002004233001.jpg",
+"http://galleries.allover30.com/mature/Ariel/uS3758/ari001014001952001.jpg",
+"http://galleries.allover30.com/mature/Artemesia/sN7cFY/art001005006069001.jpg",
+"http://galleries.allover30.com/mature/AshleighMckenzie/Yb9PkO/ash005039008858001.jpg",
+"http://galleries.allover30.com/mature/AshleyS/yUdw44/ash004002007769001.jpg",
+"http://galleries.allover30.com/mature/Barbarella/bfkY9M/bar002012006857001.jpg",
+"http://galleries.allover30.com/mature/BarbieN/yGpDI1/bar003040009504001.jpg",
+"http://galleries.allover30.com/mature/BelleStar/TBxK7n/bel003014008624001.jpg",
+"http://galleries.allover30.com/mature/BelleStar/zzGSKZ/bel003014008479001.jpg",
+"http://galleries.allover30.com/mature/Breeze/ftr2W1/bre001005005279001.jpg",
+"http://galleries.allover30.com/mature/Britney/Mcp7wg/bri004035008831001.jpg",
+"http://galleries.allover30.com/mature/Britney/dymVjk/bri004035008810001.jpg",
+"http://galleries.allover30.com/mature/Britney/fHoor2/bri004035008925001.jpg",
+"http://galleries.allover30.com/mature/Cameron/KsR93m/cam003032001943001.jpg",
+"http://galleries.allover30.com/mature/Camilla/vr2llC/cam005034003538001.jpg",
+"http://galleries.allover30.com/mature/CarolynReese/ptALO6/car012002005557001.jpg",
+"http://galleries.allover30.com/mature/Cassidey/V5td6X/cas002002007469001.jpg",
+"http://galleries.allover30.com/mature/Cheyanne/zaltXl/che007034003688001.jpg",
+"http://galleries.allover30.com/mature/ClaudiaK/QsOwmn/cla005002003844001.jpg",
+"http://galleries.allover30.com/mature/Collette/6O6E5D/col001035003061001.jpg",
+"http://galleries.allover30.com/mature/Collette/gFOsjI/col001035004108001.jpg",
+"http://galleries.allover30.com/mature/Coral/HsmQLq/cor004002005559001.jpg",
+"http://galleries.allover30.com/mature/Cricket/RL92Mz/cri001002002731001.jpg",
+"http://galleries.allover30.com/mature/DanielleT/3Ocv06/dan009044005317001.jpg",
+"http://galleries.allover30.com/mature/Dez/ZxthtL/dez001034003459001.jpg",
+"http://galleries.allover30.com/mature/Dia/CuLODG/dia003005001672001.jpg",
+"http://galleries.allover30.com/mature/Elexis/Sm46Ww/ele001023003021001.jpg",
+"http://galleries.allover30.com/mature/ElexisMonroe/MvyWWM/ele001002008072001.jpg",
+"http://galleries.allover30.com/mature/Enza/DsdIwe/enz001012005795001.jpg",
+"http://galleries.allover30.com/mature/Enza/RqShCb/enz001012005742001.jpg",
+"http://galleries.allover30.com/mature/Enza/tCZKMP/enz001011006568001.jpg",
+"http://galleries.allover30.com/mature/FayeX/cC3ymD/fay002038008103001.jpg",
+"http://galleries.allover30.com/mature/FayeX/gEY4da/fay002038007997001.jpg",
+"http://galleries.allover30.com/mature/FridaSante/8XFbJ4/fri001002009503001.jpg",
+"http://galleries.allover30.com/mature/FridaSante/MPaCdR/fri001002009708001.jpg",
+"http://galleries.allover30.com/mature/GloriaM/ExMc6A/glo002005008396001.jpg",
+"http://galleries.allover30.com/mature/Graziella/WvOdim/gra001020000583001.jpg",
+"http://galleries.allover30.com/mature/HelenaBlack/PVRrBQ/hel002042009576001.jpg",
+"http://galleries.allover30.com/mature/HollyBrooks/bbx0RV/hol002002007275001.jpg",
+"http://galleries.allover30.com/mature/Honesty/8H8qZy/hon003021007855001.jpg",
+"http://galleries.allover30.com/mature/Honesty/C9zcRk/hon003021007696001.jpg",
+"http://galleries.allover30.com/mature/Honesty/CaDrG4/hon003021007799001.jpg",
+"http://galleries.allover30.com/mature/Ionella/n687hH/ion001035004060001.jpg",
+"http://galleries.allover30.com/mature/Isabelle/Nkl4Nt/isa003021006006001.jpg",
+"http://galleries.allover30.com/mature/JasmineM/KqQiCz/jas007002006802001.jpg",
+"http://galleries.allover30.com/mature/JasmineM/gwEKco/jas007002006781001.jpg",
+"http://galleries.allover30.com/mature/Jaylene/5JI5CV/jay002002003815001.jpg",
+"http://galleries.allover30.com/mature/JennyB/V1RDKB/jen008029002908001.jpg",
+"http://galleries.allover30.com/mature/JennyBadeau/b429GR/jen008021004854001.jpg",
+"http://galleries.allover30.com/mature/JennyH/iQrhDR/jen010011005181001.jpg",
+"http://galleries.allover30.com/mature/JessicaZara/9KDwkq/jes005002006008001.jpg",
+"http://galleries.allover30.com/mature/JessicaZara/ZXROdb/jes005002005909001.jpg",
+"http://galleries.allover30.com/mature/Josefa/w4utTg/jos002012002907001.jpg",
+"http://galleries.allover30.com/mature/Judith/tqmwyV/jud003035004391001.jpg",
+"http://galleries.allover30.com/mature/Judith/yrQvNP/jud003035003984001.jpg",
+"http://galleries.allover30.com/mature/Kata/hbIzm3/kat014035007354001.jpg",
+"http://galleries.allover30.com/mature/KateT/aXrjmI/kat012035004804001.jpg",
+"http://galleries.allover30.com/mature/KathyWhite/PAhfmB/kat017012009024001.jpg",
+"http://galleries.allover30.com/mature/Katrina/RiGu0Z/kat008022002805001.jpg",
+"http://galleries.allover30.com/mature/KatrinaMathews/outTpl/kat015014008481001.jpg",
+"http://galleries.allover30.com/mature/KazB/k0ORcs/kaz001021003539001.jpg",
+"http://galleries.allover30.com/mature/KieraBlu/NDzg1y/kie001014007307001.jpg",
+"http://galleries.allover30.com/mature/Kim/f6JsTL/kim003034004134001.jpg",
+"http://galleries.allover30.com/mature/KimberlyHenessey/JDLmCG/kim004014008503001.jpg",
+"http://galleries.allover30.com/mature/KittyS/ViWqQx/kit003035004561001.jpg",
+"http://galleries.allover30.com/mature/LaraElaine/86JHxQ/lar004014008729001.jpg",
+"http://galleries.allover30.com/mature/LaraElaine/ajr2zf/lar004014009026001.jpg",
+"http://galleries.allover30.com/mature/LaraElaine/zxECe7/lar004014008893001.jpg",
+"http://galleries.allover30.com/mature/LauraBentley/HMZtp4/lau010002009962001.jpg",
+"http://galleries.allover30.com/mature/LauraFabroni/LzebBW/lau011012005368001.jpg",
+"http://galleries.allover30.com/mature/LauraKing/5xIlIG/lau008035005445001.jpg",
+"http://galleries.allover30.com/mature/LauraKing/rIw4KG/lau008035005530001.jpg",
+"http://galleries.allover30.com/mature/LaurenE/yiWo6B/lau006034003886001.jpg",
+"http://galleries.allover30.com/mature/Laurita/jo7XwG/lau005021002195001.jpg",
+"http://galleries.allover30.com/mature/Laurita/xQ6Xg0/lau005025002061001.jpg",
+"http://galleries.allover30.com/mature/LenaE/4597ka/len004002005954001.jpg",
+"http://galleries.allover30.com/mature/Liddy/JnXLq6/lid001036004758001.jpg",
+"http://galleries.allover30.com/mature/Lilli/9UXA3H/lil002005007111001.jpg",
+"http://galleries.allover30.com/mature/LillySwan/9xXUyA/lil007002006938001.jpg",
+"http://galleries.allover30.com/mature/LillySwan/MEacUY/lil007002006959001.jpg",
+"http://galleries.allover30.com/mature/LillySwan/NHd5M8/lil007002007138001.jpg",
+"http://galleries.allover30.com/mature/LillySwan/rdAjo0/lil007002006804001.jpg",
+"http://galleries.allover30.com/mature/LillySwan/tU2Zb6/lil007002007030001.jpg",
+"http://galleries.allover30.com/mature/Linda/bv09pE/lin002035002638001.jpg",
+"http://galleries.allover30.com/mature/LindaS/Y76lLf/lin003011003795001.jpg",
+"http://galleries.allover30.com/mature/LuBerry/4CtxDA/lub001012009845001.jpg",
+"http://galleries.allover30.com/mature/LuBerry/GzpZMP/lub001012009866001.jpg",
+"http://galleries.allover30.com/mature/LuBerry/WqSa5Z/lub001012009779001.jpg",
+"http://galleries.allover30.com/mature/LuBerry/XyQVCL/lub001012009895001.jpg",
+"http://galleries.allover30.com/mature/Luccia/CjKmaM/luc005005002549001.jpg",
+"http://galleries.allover30.com/mature/LyaPink/0Iyssw/lya001002004896001.jpg",
+"http://galleries.allover30.com/mature/Lynn/bX0UW0/lyn002014006646001.jpg",
+"http://galleries.allover30.com/mature/MaggieK/7897IJ/mag004002005419001.jpg",
+"http://galleries.allover30.com/mature/MarieMichaels/NpZRyT/mar020002005638001.jpg",
+"http://galleries.allover30.com/mature/Marlyn/9ymmsV/mar014021008709001.jpg",
+"http://galleries.allover30.com/mature/Marlyn/Vmzkme/mar014021004057001.jpg",
+"http://galleries.allover30.com/mature/Mazy/QV0wM7/maz001014005147001.jpg",
+"http://galleries.allover30.com/mature/Mazy/sbIMR9/maz001014004981001.jpg",
+"http://galleries.allover30.com/mature/Megan/LbdqHx/meg001034004080001.jpg",
+"http://galleries.allover30.com/mature/Megan/s7ZARM/meg001034004055001.jpg",
+"http://galleries.allover30.com/mature/Melissa/dQrN71/mel001002003670001.jpg",
+"http://galleries.allover30.com/mature/MichelleB/29Uoap/mic006021004033001.jpg",
+"http://galleries.allover30.com/mature/MichelleB/ASmbv1/mic006021004161001.jpg",
+"http://galleries.allover30.com/mature/Mija/DWDVtf/mij001011003666001.jpg",
+"http://galleries.allover30.com/mature/Misti/9k4cPE/mis002011005383001.jpg",
+"http://galleries.allover30.com/mature/MistyAnderson/OKXcOq/mis003002007874001.jpg",
+"http://galleries.allover30.com/mature/MistyAnderson/aoLtCZ/mis003002008048001.jpg",
+"http://galleries.allover30.com/mature/MonaB/QLEzJG/mon007035007013001.jpg",
+"http://galleries.allover30.com/mature/MontseSwinger/GdWnUI/mon009012005533001.jpg",
+"http://galleries.allover30.com/mature/Myrah/5y78wF/myr001034002555001.jpg",
+"http://galleries.allover30.com/mature/Mystique/DAAfc6/mys001021007012001.jpg",
+"http://galleries.allover30.com/mature/Neela/0jQ7V9/nee001002003764001.jpg",
+"http://galleries.allover30.com/mature/Nella/I48CcI/nel001011005739001.jpg",
+"http://galleries.allover30.com/mature/NikkiDaniels/iOtxK7/nik002002004937001.jpg",
+"http://galleries.allover30.com/mature/NikkiDaniels/nxTyUo/nik002002005120001.jpg",
+"http://galleries.allover30.com/mature/NikkiDaniels/smjSqE/nik002002005056001.jpg",
+"http://galleries.allover30.com/mature/Olga/41kIuX/olg001002002636001.jpg",
+"http://galleries.allover30.com/mature/Paige/Dz4VJB/pai001005007112001.jpg",
+"http://galleries.allover30.com/mature/Paige/ToXlF4/pai001005007152001.jpg",
+"http://galleries.allover30.com/mature/Paige/hTikBU/pai001005007229001.jpg",
+"http://galleries.allover30.com/mature/Paige/riYEJ1/pai001005007133001.jpg",
+"http://galleries.allover30.com/mature/PandoraJones/dyTAFf/pan001005006283001.jpg",
+"http://galleries.allover30.com/mature/Patris/D7V7Vz/pat001011005770001.jpg",
+"http://galleries.allover30.com/mature/Persia/S7vs5e/per001002005959001.jpg",
+"http://galleries.allover30.com/mature/Robyn/NgTPkL/rob002021001815001.jpg",
+"http://galleries.allover30.com/mature/RoxanneClemmens/emdrW1/rox004014009901001.jpg",
+"http://galleries.allover30.com/mature/Ryan/Y5HWJc/rya003002004560001.jpg",
+"http://galleries.allover30.com/mature/Salinas/CXMvpY/sal003035005070001.jpg",
+"http://galleries.allover30.com/mature/Salinas/Ken25b/sal003035006475001.jpg",
+"http://galleries.allover30.com/mature/Salinas/O4rKYs/sal003035005470001.jpg",
+"http://galleries.allover30.com/mature/Salinas/WCDw1B/sal003035006553001.jpg",
+"http://galleries.allover30.com/mature/Salinas/hpc5Rb/sal003035006782001.jpg",
+"http://galleries.allover30.com/mature/Salinas/iWtSKA/sal003035005153001.jpg",
+"http://galleries.allover30.com/mature/Salinas/p49jbZ/sal003035006642001.jpg",
+"http://galleries.allover30.com/mature/SallyJones/TsmCct/sal004014008578001.jpg",
+"http://galleries.allover30.com/mature/Sara/oskIVJ/sar001014002965001.jpg",
+"http://galleries.allover30.com/mature/SaraC/Z6VsqN/sar003034004436001.jpg",
+"http://galleries.allover30.com/mature/SaraC/hmbVu8/sar003005003696001.jpg",
+"http://galleries.allover30.com/mature/SaraC/vNgW7t/sar003034004307001.jpg",
+"http://galleries.allover30.com/mature/SaraC/vnpzWt/sar003034004285001.jpg",
+"http://galleries.allover30.com/mature/SarahShevon/X7JhK8/sar006023008549001.jpg",
+"http://galleries.allover30.com/mature/SarahShevon/pArLPC/sar006023008527001.jpg",
+"http://galleries.allover30.com/mature/SarahShevon/uXmGVa/sar006023008713001.jpg",
+"http://galleries.allover30.com/mature/SashaB/kWCBYV/sas002002003218001.jpg",
+"http://galleries.allover30.com/mature/Selina/33tYk7/sel001012003737001.jpg",
+"http://galleries.allover30.com/mature/Severine/eZXBNK/sev001014006397001.jpg",
+"http://galleries.allover30.com/mature/SherryRiley/f7MUH5/she006012006482001.jpg",
+"http://galleries.allover30.com/mature/SherryRiley/uNBy1r/she006012006503001.jpg",
+"http://galleries.allover30.com/mature/Shyla/wCk5vZ/shy001035008237001.jpg",
+"http://galleries.allover30.com/mature/SinnSage/Da3ag2/sin003002008002001.jpg",
+"http://galleries.allover30.com/mature/SinnSage/ElBU6T/sin003002007900001.jpg",
+"http://galleries.allover30.com/mature/SkyRodgers/rH06V0/sky003014005984001.jpg",
+"http://galleries.allover30.com/mature/Sofia/F3Ow40/sof001021004085001.jpg",
+"http://galleries.allover30.com/mature/SophiaK/Dm0hoE/sop007002008927001.jpg",
+"http://galleries.allover30.com/mature/SophiaK/H14bIA/sop007002008787001.jpg",
+"http://galleries.allover30.com/mature/SophiaK/sFO4JK/sop007002008975001.jpg",
+"http://galleries.allover30.com/mature/SophiaK/uVznNc/sop007002008834001.jpg",
+"http://galleries.allover30.com/mature/SophiaM/QJcqAO/sop004012003573001.jpg",
+"http://galleries.allover30.com/mature/SophiaM/VgqS8t/sop004012003714001.jpg",
+"http://galleries.allover30.com/mature/SophiaM/uAuo21/sop004012003692001.jpg",
+"http://galleries.allover30.com/mature/SophiaM/zI0c0Z/sop004012003821001.jpg",
+"http://galleries.allover30.com/mature/StarNine/9wiaEq/sta010002008839001.jpg",
+"http://galleries.allover30.com/mature/Stella/6KhMpK/ste004011005498001.jpg",
+"http://galleries.allover30.com/mature/Susie/ZD9vDW/sus001036004037001.jpg",
+"http://galleries.allover30.com/mature/Sweetness/oenSPP/swe001014009799001.jpg",
+"http://galleries.allover30.com/mature/Sydney/JkkOIA/syd001014003738001.jpg",
+"http://galleries.allover30.com/mature/SyndiBell/i45Rr3/syn001035006670001.jpg",
+"http://galleries.allover30.com/mature/Szilvia/vT0y9a/szi001032001808001.jpg",
+"http://galleries.allover30.com/mature/Tabitha/oG6xTG/tab001004000362001.jpg",
+"http://galleries.allover30.com/mature/TamaraFox/Zn4e49/tam003002005219001.jpg",
+"http://galleries.allover30.com/mature/TaraTrinity/BiHheN/tar003021005176001.jpg",
+"http://galleries.allover30.com/mature/Tea/9t6n5y/tea001021007594001.jpg",
+"http://galleries.allover30.com/mature/Tina/Iz6ykK/tin001002004556001.jpg",
+"http://galleries.allover30.com/mature/Tina/MhRag1/tin001002004582001.jpg",
+"http://galleries.allover30.com/mature/TinaKay/PR9LmE/tin005021009945001.jpg",
+"http://galleries.allover30.com/mature/Valerie/bHhgky/val002012002723001.jpg",
+"http://galleries.allover30.com/mature/ViannaLovely/BkH5S3/via001023008122001.jpg",
+"http://galleries.allover30.com/mature/ViannaLovely/i6IAje/via001023008289001.jpg",
+"http://galleries.allover30.com/mature/ViannaLovely/oSjfJU/via001023008239001.jpg",
+"http://galleries.allover30.com/mature/VictoriaTyler/J0qQIP/vic004023008262001.jpg",
+"http://galleries.allover30.com/mature/VictoriaTyler/dISEiF/vic004023008078001.jpg",
+"http://galleries.allover30.com/mature/Willow/jtIHn6/wil001002005958001.jpg",
+"http://galleries.allover30.com/mature/YasmineDeLeon/jIDMTa/yas002002007972001.jpg",
+"https://galleries.allover30.com/mature/TamaraFox/2lJiO3/tam003002005281001.jpg"
+    ];
+    let listaAleatoria = [];
+    let indiceGaleria = 0;
+    let galeriaActual = 0;
+    let animacionID;
+    let inicio = null;
+    let tiempoAnterior = 0;
+    let tiempoTotal = 60000; // 60 segundos por galería
+    let contenedor, distancia;
+    let db;
+    let pausado = false;
+    let urlsGaleriaActual = []; // Almacena las URLs de la galería actual
+
+    function mezclarArray(array) {
+      return array.sort(() => Math.random() - 0.5);
     }
 
-    .menu-button {
-      background-color: #2196f3;
-      color: white;
-      padding: 10px 18px;
+    function abrirDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('GaleriaDB', 1);
+        req.onerror = () => reject("Error al abrir IndexedDB");
+        req.onsuccess = () => {
+          db = req.result;
+          resolve(db);
+        };
+        req.onupgradeneeded = (e) => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains('imagenes')) {
+            db.createObjectStore('imagenes');
+          }
+        };
+      });
+    }
+
+    function redimensionarImagen(blob, anchoMax = 500) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const escala = Math.min(anchoMax / img.width, 1);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width * escala;
+          canvas.height = img.height * escala;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((nuevoBlob) => resolve(nuevoBlob), 'image/jpeg', 0.85);
+        };
+        img.src = URL.createObjectURL(blob);
+      });
+    }
+
+    async function guardarImagen(url, blob) {
+      const tx = db.transaction('imagenes', 'readwrite');
+      tx.objectStore('imagenes').put(blob, url);
+      await tx.complete;
+      actualizarPesoCache();
+    }
+
+    async function cargarDesdeCache(url) {
+      return new Promise((resolve) => {
+        const tx = db.transaction('imagenes', 'readonly');
+        const req = tx.objectStore('imagenes').get(url);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function generarImagenesDesde(entrada) {
+      contenedor = document.getElementById('galeria');
+      cancelAnimationFrame(animacionID);
+      contenedor.innerHTML = '';
+      urlsGaleriaActual = []; // Limpiar URLs de la galería actual
+
+      const match = entrada.match(/^(.*?)(\d+)(\.\w{3,4})$/);
+      if (!match) {
+        contenedor.innerHTML = "<p style='color:red'>❌ URL inválida</p>";
+        return;
+      }
+
+      const [_, base, numero, extension] = match;
+      const longitud = numero.length;
+      const inicioNum = parseInt(numero, 10);
+
+      for (let i = 0; i < 15; i++) {
+        const numActual = (inicioNum + i).toString().padStart(longitud, '0');
+        const url = `${base}${numActual}${extension}`;
+        urlsGaleriaActual.push(url); // Almacenar URL para usarla en el nombre
+
+        let blob = await cargarDesdeCache(url);
+        let pesoImagen = 0;
+
+        if (!blob) {
+          try {
+            const res = await fetch(url);
+            const originalBlob = await res.blob();
+            blob = await redimensionarImagen(originalBlob);
+            pesoImagen = blob.size;
+            await guardarImagen(url, blob);
+          } catch (e) {
+            continue;
+          }
+        } else {
+          pesoImagen = blob.size;
+        }
+
+        const contenedorImagen = document.createElement('div');
+        contenedorImagen.className = 'imagen-contenedor';
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(blob);
+        contenedorImagen.appendChild(img);
+
+        const pesoTexto = document.createElement('div');
+        pesoTexto.className = 'peso-imagen';
+        pesoTexto.innerText = `${(pesoImagen / 1024).toFixed(1)} KB`;
+        contenedorImagen.appendChild(pesoTexto);
+
+        contenedor.appendChild(contenedorImagen);
+      }
+
+      actualizarNombreImagen();
+      setTimeout(() => reiniciarScroll(), 800);
+    }
+
+    function siguienteGaleria() {
+      if (listaAleatoria.length === 0) {
+        listaAleatoria = mezclarArray([...listaURLs]);
+        indiceGaleria = 0;
+      }
+
+      if (indiceGaleria >= listaAleatoria.length) {
+        localStorage.removeItem('indiceGaleria');
+        localStorage.removeItem('tiempoAnterior');
+        location.reload();
+        return;
+      }
+
+      galeriaActual = indiceGaleria + 1;
+      const url = listaAleatoria[indiceGaleria];
+      indiceGaleria++;
+
+      generarImagenesDesde(url);
+      actualizarContadorGaleria();
+      actualizarContadorTotalImagenes();
+      guardarPosicion();
+    }
+
+    function reiniciarScroll() {
+      cancelAnimationFrame(animacionID);
+      inicio = null;
+      const savedTime = localStorage.getItem('tiempoAnterior');
+      tiempoAnterior = savedTime ? parseFloat(savedTime) : 0;
+
+      contenedor = document.getElementById('galeria');
+      tiempoTotal = 60000;
+      distancia = contenedor.scrollHeight - contenedor.clientHeight;
+
+      if (!pausado) {
+        animacionID = requestAnimationFrame(animarScroll);
+      }
+    }
+
+    function animarScroll(timestamp) {
+      if (pausado) return;
+
+      if (!inicio) inicio = timestamp;
+      const transcurrido = timestamp - inicio + tiempoAnterior;
+      const progreso = transcurrido / tiempoTotal;
+      const desplazamiento = distancia * progreso;
+
+      contenedor.scrollTop = desplazamiento;
+      actualizarContadorImagen();
+      actualizarContadorTotalImagenes();
+      actualizarNombreImagen();
+      guardarPosicion();
+
+      if (progreso < 1) {
+        animacionID = requestAnimationFrame(animarScroll);
+      } else {
+        contenedor.scrollTop = 0;
+        inicio = null;
+        tiempoAnterior = 0;
+        siguienteGaleria();
+      }
+    }
+
+    function togglePausa() {
+      pausado = !pausado;
+      const botonPausa = document.getElementById('botonPausa');
+      if (pausado) {
+        cancelAnimationFrame(animacionID);
+        tiempoAnterior += performance.now() - inicio;
+        inicio = null;
+        botonPausa.innerText = '▶️ Reanudar';
+      } else {
+        animacionID = requestAnimationFrame(animarScroll);
+        botonPausa.innerText = '⏸️ Pausar';
+      }
+      guardarPosicion();
+    }
+
+    function guardarPosicion() {
+      localStorage.setItem('indiceGaleria', indiceGaleria);
+      localStorage.setItem('tiempoAnterior', tiempoAnterior);
+    }
+
+    function actualizarContadorGaleria() {
+      document.getElementById("contadorGaleria").innerText =
+        `Galería ${galeriaActual} de ${listaURLs.length}`;
+    }
+
+    function actualizarContadorImagen() {
+      const scrollTop = contenedor.scrollTop;
+      const alturaImg = contenedor.firstChild?.clientHeight || 1;
+      const imagenActual = Math.min(15, Math.floor(scrollTop / (alturaImg + 10)) + 1);
+      document.getElementById("contadorImagen").innerText =
+        `Imagen ${imagenActual} de 15`;
+    }
+
+    function actualizarContadorTotalImagenes() {
+      const scrollTop = contenedor.scrollTop;
+      const alturaImg = contenedor.firstChild?.clientHeight || 1;
+      const imagenActualGaleria = Math.min(15, Math.floor(scrollTop / (alturaImg + 10)) + 1);
+      const totalImagenes = listaURLs.length * 15;
+      const imagenActualTotal = (galeriaActual - 1) * 15 + imagenActualGaleria;
+      document.getElementById("contadorTotalImagenes").innerText =
+        `Total Imágenes: ${totalImagenes} (Actual: ${imagenActualTotal})`;
+    }
+
+    function actualizarNombreImagen() {
+      const scrollTop = contenedor.scrollTop;
+      const alturaImg = contenedor.firstChild?.clientHeight || 1;
+      const imagenActual = Math.min(15, Math.floor(scrollTop / (alturaImg + 10)));
+      const url = urlsGaleriaActual[imagenActual] || '';
+      let nombre = 'Desconocido';
+      const matchMature = url.match(/\/mature\/([^/]+)\//);
+      const matchOtros = url.match(/\/[A-Z]\/([^/]+?)(?:-\d+)?\//);
+      if (matchMature) {
+        nombre = matchMature[1];
+      } else if (matchOtros) {
+        nombre = matchOtros[1];
+      }
+      document.getElementById("nombreImagen").innerText = `Nombre: ${nombre}`;
+    }
+
+    function actualizarDuracionPresentacion() {
+      const totalSegundos = listaURLs.length * (tiempoTotal / 1000);
+      const horas = Math.floor(totalSegundos / 3600);
+      const minutos = Math.floor((totalSegundos % 3600) / 60);
+      const segundos = Math.floor(totalSegundos % 60).toString().padStart(2, '0');
+      const horasStr = horas.toString().padStart(2, '0');
+      const minutosStr = minutos.toString().padStart(2, '0');
+      document.getElementById("duracionPresentacion").innerText =
+        `Duración: ${horasStr}:${minutosStr}:${segundos}`;
+    }
+
+    async function borrarCache() {
+      const req = indexedDB.deleteDatabase("GaleriaDB");
+      req.onsuccess = () => {
+        alert("🗑️ Caché borrado.");
+        localStorage.removeItem('indiceGaleria');
+        localStorage.removeItem('tiempoAnterior');
+        location.reload();
+      };
+    }
+
+    async function actualizarPesoCache() {
+      const tx = db.transaction('imagenes', 'readonly');
+      const store = tx.objectStore('imagenes');
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const totalBytes = req.result.reduce((sum, blob) => sum + blob.size, 0);
+        const totalGB = totalBytes / (1024 * 1024 * 1024); // Convertir a GB
+        document.getElementById("pesoCache").innerText =
+          `Caché: ${totalGB.toFixed(3)} GB`;
+      };
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await abrirDB();
+      actualizarPesoCache();
+      actualizarDuracionPresentacion();
+
+      // Reanudar desde la posición guardada
+      const savedIndice = localStorage.getItem('indiceGaleria');
+      if (savedIndice) {
+        listaAleatoria = mezclarArray([...listaURLs]);
+        indiceGaleria = parseInt(savedIndice, 10);
+        galeriaActual = indiceGaleria;
+        const url = listaAleatoria[indiceGaleria - 1];
+        generarImagenesDesde(url);
+        actualizarContadorGaleria();
+        actualizarContadorTotalImagenes();
+        actualizarNombreImagen();
+      } else {
+        siguienteGaleria();
+      }
+
+      document.getElementById("galeria").addEventListener("scroll", () => {
+        actualizarContadorImagen();
+        actualizarContadorTotalImagenes();
+        actualizarNombreImagen();
+      });
+    });
+  </script>
+</body>
+</html>      padding: 10px 18px;
       font-size: 16px;
       border: none;
       border-radius: 6px;
